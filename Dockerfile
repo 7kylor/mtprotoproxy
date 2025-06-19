@@ -1,6 +1,6 @@
 FROM ubuntu:24.04
 
-# Install dependencies
+# Install dependencies with performance-focused packages
 RUN apt-get update && apt-get install --no-install-recommends -y \
     python3 \
     python3-pip \
@@ -10,8 +10,11 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uvloop via pip
-RUN pip3 install --no-cache-dir uvloop --break-system-packages
+# Install high-performance async libraries
+RUN pip3 install --no-cache-dir \
+    uvloop \
+    cython \
+    --break-system-packages
 
 # Create non-root user first
 RUN useradd tgproxy -u 10000 --create-home
@@ -29,9 +32,9 @@ USER tgproxy
 # Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+# Performance-optimized health check with shorter intervals
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=2 \
     CMD python3 -c "import socket; s=socket.socket(); s.settimeout(1); s.connect(('127.0.0.1', 8080)); s.close()"
 
-# Run the alexbers MTProxy
-CMD ["python3", "mtprotoproxy.py"]
+# Run with performance optimizations
+CMD ["python3", "-O", "mtprotoproxy.py"]
