@@ -122,4 +122,4 @@ python3 test.py
 
 ## License
 
-Licensed under the same terms as the original alexbers/mtprotoproxy project.
+MIT - Licensed under the same terms as the original alexbers/mtprotoproxy project.

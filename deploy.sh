@@ -37,12 +37,19 @@ echo "Selected port: $MTPROTO_PORT"
 if [ -z "$USER1_SECRET" ]; then
     export USER1_SECRET=$(generate_secret)
     echo "Generated USER1_SECRET: $USER1_SECRET"
+else
+    echo "Using provided USER1_SECRET"
 fi
 
 if [ -z "$USER2_SECRET" ]; then
     export USER2_SECRET=$(generate_secret)
     echo "Generated USER2_SECRET: $USER2_SECRET"
+else
+    echo "Using provided USER2_SECRET"
 fi
+
+# Set default values for optional variables
+export AD_TAG=${AD_TAG:-""}
 
 # Set environment variables
 export MTPROTO_PORT
