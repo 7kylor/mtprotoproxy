@@ -50,7 +50,6 @@ fi
 
 # Set default values for optional variables
 export AD_TAG=${AD_TAG:-""}
-export FORCE_SINGAPORE_DC=${FORCE_SINGAPORE_DC:-true}
 
 # Set environment variables
 export MTPROTO_PORT
@@ -65,7 +64,6 @@ echo "============================================================"
 echo "Port: $MTPROTO_PORT"
 echo "External IP: $EXTERNAL_IP"
 echo "TLS Domain: $TLS_DOMAIN"
-echo "Force Singapore DC: $FORCE_SINGAPORE_DC"
 echo "User1 Secret: $USER1_SECRET"
 echo "User2 Secret: $USER2_SECRET"
 echo "============================================================"
@@ -74,10 +72,8 @@ echo "============================================================"
 echo " Generating .env file for consistent configuration"
 echo "============================================================"
 {
-    echo "# MTProto Proxy Configuration for Singapore Data Center"
     echo "MTPROTO_PORT=${MTPROTO_PORT}"
     echo "TLS_DOMAIN=${TLS_DOMAIN}"
-    echo "FORCE_SINGAPORE_DC=${FORCE_SINGAPORE_DC}"
     echo "USER1_SECRET=${USER1_SECRET}"
     echo "USER2_SECRET=${USER2_SECRET}"
     echo "AD_TAG=${AD_TAG}"
