@@ -39,7 +39,7 @@ AD_TAG = os.environ.get('AD_TAG', None)
 CLIENT_KEEPALIVE = int(os.environ.get('MTPROTO_CLIENT_KEEPALIVE', 15))
 
 # Maximum time (in seconds) that transmitted data may remain unacknowledged before the connection is aborted.
-CLIENT_ACK_TIMEOUT = int(os.environ.get('MTPROTO_CLIENT_ACK_TIMEOUT', 30))
+CLIENT_ACK_TIMEOUT = int(os.environ.get('MTPROTO_CLIENT_ACK_TIMEOUT', 60))
 
 # --- Low-latency tuning overrides -------------------------------------------
 # Skip Telegram middle-proxy hop (direct DC connection)

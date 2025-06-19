@@ -487,7 +487,9 @@ class TgConnectionPool:
         task = asyncio.open_connection(host, port, limit=get_to_clt_bufsize())
         reader_tgt, writer_tgt = await asyncio.wait_for(task, timeout=config.TG_CONNECT_TIMEOUT)
 
-        set_keepalive(writer_tgt.get_extra_info("socket"))
+        set_keepalive(writer_tgt.get_extra_info("socket"), config.CLIENT_KEEPALIVE)
+        set_nodelay(writer_tgt.get_extra_info("socket"))
+        set_ack_timeout(writer_tgt.get_extra_info("socket"), config.CLIENT_ACK_TIMEOUT)
         set_bufsizes(writer_tgt.get_extra_info("socket"), get_to_clt_bufsize(), get_to_tg_bufsize())
 
         if init_func:
