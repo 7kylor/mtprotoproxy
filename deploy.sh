@@ -98,16 +98,27 @@ echo "============================================================"
 # Wait for container to start
 sleep 5
 
+# Generate correct connection URLs with protocol prefixes
+TLS_DOMAIN_HEX=$(echo -n "$TLS_DOMAIN" | xxd -p | tr -d '\n')
+
 # Show connection information
 echo "Connection URLs:"
-echo "TLS URL: tg://proxy?server=$EXTERNAL_IP&port=$MTPROTO_PORT&secret=$USER1_SECRET"
-echo "Secure URL: tg://proxy?server=$EXTERNAL_IP&port=$MTPROTO_PORT&secret=$USER2_SECRET"
+echo
+echo "Secure URLs (dd prefix):"
+echo "  User1: tg://proxy?server=$EXTERNAL_IP&port=$MTPROTO_PORT&secret=dd$USER1_SECRET"
+echo "  User2: tg://proxy?server=$EXTERNAL_IP&port=$MTPROTO_PORT&secret=dd$USER2_SECRET"
+echo
+echo "TLS URLs (ee prefix):"
+echo "  User1: tg://proxy?server=$EXTERNAL_IP&port=$MTPROTO_PORT&secret=ee$USER1_SECRET$TLS_DOMAIN_HEX"
+echo "  User2: tg://proxy?server=$EXTERNAL_IP&port=$MTPROTO_PORT&secret=ee$USER2_SECRET$TLS_DOMAIN_HEX"
 echo
 echo "Manual Configuration:"
 echo "   Server: $EXTERNAL_IP"
 echo "   Port: $MTPROTO_PORT"
-echo "   Secret 1: $USER1_SECRET"
-echo "   Secret 2: $USER2_SECRET"
+echo "   Secure Secret 1: dd$USER1_SECRET"
+echo "   Secure Secret 2: dd$USER2_SECRET"
+echo "   TLS Secret 1: ee$USER1_SECRET$TLS_DOMAIN_HEX"
+echo "   TLS Secret 2: ee$USER2_SECRET$TLS_DOMAIN_HEX"
 echo
 
 # Load .env to show correct info
