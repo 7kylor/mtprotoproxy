@@ -4,68 +4,46 @@ services:
     container_name: mtproxy_stable
     restart: unless-stopped
     
-    # Use host networking for minimal latency overhead
-    network_mode: host
-    
-    # Alternative: if host networking isn't suitable, use optimized port mapping
-    # ports:
-    #   - "${MTPROTO_PORT:-8080}:${MTPROTO_PORT:-8080}"
+    # Dynamic port mapping instead of host networking
+    ports:
+      - "${MTPROTO_PORT:-8080}:${MTPROTO_PORT:-8080}"
     
     # Load configuration directly from the .env file
     env_file:
       - .env
     
-    # Security hardening (relaxed for performance)
+    # Security hardening
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
-      - SYS_NICE  # Allow process prioritization
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=200m
+      - /tmp:rw,noexec,nosuid,size=100m
     
-    # Resource limits optimized for 1 vCPU / 2GB RAM servers
+    # Resource limits for stability
     deploy:
       resources:
         limits:
-          memory: 1.5G  # Leave 500MB for system
-          cpus: '0.8'   # Leave 20% CPU for system
+          memory: 512M
+          cpus: '0.5'
         reservations:
           memory: 128M
           cpus: '0.1'
     
-    # Optimized health check
+    # Health check
     healthcheck:
       test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('127.0.0.1', 8080)); s.close()"]
-      interval: 15s
-      timeout: 3s
-      retries: 2
-      start_period: 10s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     
-    # Minimal logging for performance
+    # Optimized logging
     logging:
       driver: json-file
       options:
-        max-size: "2m"
-        max-file: "2"
-    
-    # Performance-oriented sysctls (requires privileged mode or host network)
-    sysctls:
-      # Network performance optimizations
-      - net.core.rmem_max=134217728
-      - net.core.wmem_max=134217728
-      - net.ipv4.tcp_rmem=4096 87380 134217728
-      - net.ipv4.tcp_wmem=4096 65536 134217728
-      - net.core.netdev_max_backlog=5000
-      - net.ipv4.tcp_congestion_control=bbr
-      - net.ipv4.tcp_notsent_lowat=16384
-      - net.ipv4.tcp_low_latency=1
-    
-    # CPU affinity for consistent performance (optional)
-    # cpuset: "0,1"  # Pin to specific CPU cores if needed
-    
-    # Process priority (higher priority for lower latency)
-    privileged: false  # Keep false for security, but enable if extreme performance is needed
+        max-size: "5m"
+        max-file: "3"

@@ -484,7 +484,7 @@ myrandom = MyRandom()
 
 
 class TgConnectionPool:
-    MAX_CONNS_IN_POOL = 16  # Reduced for low-resource servers (1 vCPU/2GB RAM)
+    MAX_CONNS_IN_POOL = 64
 
     def __init__(self):
         self.pools = {}
