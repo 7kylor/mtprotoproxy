@@ -23,9 +23,15 @@ import traceback
 
 TG_DATACENTER_PORT = 443
 
-TG_DATACENTERS_V4 = ["149.154.171.5"] * 5
+TG_DATACENTERS_V4 = [
+    "149.154.175.50", "149.154.167.51", "149.154.175.100",
+    "149.154.167.91", "149.154.171.5"
+]
 
-TG_DATACENTERS_V6 = ["2001:b28:f23f:f005::a"] * 5
+TG_DATACENTERS_V6 = [
+    "2001:b28:f23d:f001::a", "2001:67c:04e8:f002::a", "2001:b28:f23d:f003::a",
+    "2001:67c:04e8:f004::a", "2001:b28:f23f:f005::a"
+]
 
 # This list will be updated in the runtime
 TG_MIDDLE_PROXIES_V4 = {
@@ -484,32 +490,16 @@ class TgConnectionPool:
         self.pools = {}
 
     async def open_tg_connection(self, host, port, init_func=None):
-        last_error = None
-        
-        for attempt in range(config.CONNECTION_RETRY_ATTEMPTS):
-            try:
-                task = asyncio.open_connection(host, port, limit=get_to_clt_bufsize())
-                reader_tgt, writer_tgt = await asyncio.wait_for(task, timeout=config.TG_CONNECT_TIMEOUT)
+        task = asyncio.open_connection(host, port, limit=get_to_clt_bufsize())
+        reader_tgt, writer_tgt = await asyncio.wait_for(task, timeout=config.TG_CONNECT_TIMEOUT)
 
-                # Apply socket optimizations
-                sock = writer_tgt.get_extra_info("socket")
-                set_keepalive(sock, config.CLIENT_KEEPALIVE)
-                set_nodelay(sock)
-                set_ack_timeout(sock, config.CLIENT_ACK_TIMEOUT)
-                set_bufsizes(sock, config.SOCKET_RECV_BUFFER, config.SOCKET_SEND_BUFFER)
+        set_keepalive(writer_tgt.get_extra_info("socket"))
+        set_bufsizes(writer_tgt.get_extra_info("socket"), get_to_clt_bufsize(), get_to_tg_bufsize())
 
-                if init_func:
-                    return await asyncio.wait_for(init_func(host, port, reader_tgt, writer_tgt),
-                                                  timeout=config.TG_CONNECT_TIMEOUT)
-                return reader_tgt, writer_tgt
-                
-            except (OSError, asyncio.TimeoutError, ConnectionRefusedError) as e:
-                last_error = e
-                if attempt < config.CONNECTION_RETRY_ATTEMPTS - 1:
-                    await asyncio.sleep(config.CONNECTION_RETRY_DELAY * (attempt + 1))
-                    continue
-                else:
-                    raise last_error
+        if init_func:
+            return await asyncio.wait_for(init_func(host, port, reader_tgt, writer_tgt),
+                                          timeout=config.TG_CONNECT_TIMEOUT)
+        return reader_tgt, writer_tgt
 
     def register_host_port(self, host, port, init_func):
         if (host, port, init_func) not in self.pools:
@@ -979,22 +969,12 @@ def try_setsockopt(sock, level, option, value):
 
 def set_keepalive(sock, interval=40, attempts=5):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-    set_nodelay(sock)
-    if hasattr(socket, "TCP_KEEPALIVE"):
-        # macOS/FreeBSD style constant for keep-alive interval
-        try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPALIVE, interval)
+    if hasattr(socket, "TCP_KEEPIDLE"):
+        try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, interval)
     if hasattr(socket, "TCP_KEEPINTVL"):
         try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
     if hasattr(socket, "TCP_KEEPCNT"):
         try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPCNT, attempts)
-    if hasattr(socket, "TCP_KEEPIDLE"):
-        try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, interval)
-
-
-def set_nodelay(sock):
-    """Disable Nagle's algorithm (TCP_NODELAY) for lower latency."""
-    if hasattr(socket, "TCP_NODELAY"):
-        try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
 
 def set_ack_timeout(sock, timeout):
@@ -1002,12 +982,7 @@ def set_ack_timeout(sock, timeout):
         try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_USER_TIMEOUT, timeout*1000)
 
 
-def set_bufsizes(sock, recv_buf=None, send_buf=None):
-    if recv_buf is None:
-        recv_buf = getattr(config, 'SOCKET_RECV_BUFFER', 32768)
-    if send_buf is None:
-        send_buf = getattr(config, 'SOCKET_SEND_BUFFER', 32768)
-    
+def set_bufsizes(sock, recv_buf, send_buf):
     try_setsockopt(sock, socket.SOL_SOCKET, socket.SO_RCVBUF, recv_buf)
     try_setsockopt(sock, socket.SOL_SOCKET, socket.SO_SNDBUF, send_buf)
 
@@ -1026,34 +1001,20 @@ def gen_x25519_public_key():
 
 
 async def connect_reader_to_writer(reader, writer):
-    BUF_SIZE = 4096  # Smaller buffer for stability on low-resource VPS
+    BUF_SIZE = 8192
     try:
         while True:
-            try:
-                data = await asyncio.wait_for(reader.read(BUF_SIZE), timeout=30.0)
-            except asyncio.TimeoutError:
-                # Send keep-alive and continue
-                continue
-            
+            data = await reader.read(BUF_SIZE)
+
             if not data:
                 if not writer.transport.is_closing():
                     writer.write_eof()
-                    try:
-                        await asyncio.wait_for(writer.drain(), timeout=5.0)
-                    except (asyncio.TimeoutError, OSError):
-                        pass
+                    await writer.drain()
                 return
 
             writer.write(data)
-            try:
-                await asyncio.wait_for(writer.drain(), timeout=10.0)
-            except asyncio.TimeoutError:
-                # If drain times out, connection is likely dead
-                break
-    except (OSError, asyncio.IncompleteReadError, ConnectionResetError, BrokenPipeError) as e:
-        pass
-    except Exception as e:
-        # Log unexpected errors but don't crash
+            await writer.drain()
+    except (OSError, asyncio.IncompleteReadError) as e:
         pass
 
 
@@ -1607,12 +1568,7 @@ async def do_middleproxy_handshake(proto_tag, dc_idx, cl_ip, cl_port):
 async def tg_connect_reader_to_writer(rd, wr, user, rd_buf_size, is_upstream):
     try:
         while True:
-            try:
-                data = await asyncio.wait_for(rd.read(rd_buf_size), timeout=60.0)
-            except asyncio.TimeoutError:
-                # Connection idle timeout - send keep-alive
-                continue
-            
+            data = await rd.read(rd_buf_size)
             if isinstance(data, tuple):
                 data, extra = data
             else:
@@ -1622,11 +1578,8 @@ async def tg_connect_reader_to_writer(rd, wr, user, rd_buf_size, is_upstream):
                 continue
 
             if not data:
-                try:
-                    wr.write_eof()
-                    await asyncio.wait_for(wr.drain(), timeout=5.0)
-                except (asyncio.TimeoutError, OSError):
-                    pass
+                wr.write_eof()
+                await wr.drain()
                 return
             else:
                 if is_upstream:
@@ -1635,24 +1588,16 @@ async def tg_connect_reader_to_writer(rd, wr, user, rd_buf_size, is_upstream):
                     update_user_stats(user, octets_to_client=len(data), msgs_to_client=1)
 
                 wr.write(data, extra)
-                try:
-                    await asyncio.wait_for(wr.drain(), timeout=15.0)
-                except asyncio.TimeoutError:
-                    # Drain timeout indicates connection issues
-                    break
-    except (OSError, asyncio.IncompleteReadError, ConnectionResetError, BrokenPipeError) as e:
-        # Expected network errors
-        pass
-    except Exception as e:
-        # Unexpected errors - log but don't crash the proxy
+                await wr.drain()
+    except (OSError, asyncio.IncompleteReadError) as e:
+        # print_err(e)
         pass
 
 
 async def handle_client(reader_clt, writer_clt):
-    sock = writer_clt.get_extra_info("socket")
-    set_keepalive(sock, config.CLIENT_KEEPALIVE, attempts=3)
-    set_ack_timeout(sock, config.CLIENT_ACK_TIMEOUT)
-    set_bufsizes(sock)  # Uses default config values now
+    set_keepalive(writer_clt.get_extra_info("socket"), config.CLIENT_KEEPALIVE, attempts=3)
+    set_ack_timeout(writer_clt.get_extra_info("socket"), config.CLIENT_ACK_TIMEOUT)
+    set_bufsizes(writer_clt.get_extra_info("socket"), get_to_tg_bufsize(), get_to_clt_bufsize())
 
     update_stats(connects_all=1)
 
@@ -1673,24 +1618,13 @@ async def handle_client(reader_clt, writer_clt):
 
     connect_directly = (not config.USE_MIDDLE_PROXY or disable_middle_proxy)
 
-    # Add retry logic for Telegram connections
-    tg_data = None
-    for attempt in range(config.CONNECTION_RETRY_ATTEMPTS):
-        try:
-            if connect_directly:
-                if config.FAST_MODE:
-                    tg_data = await do_direct_handshake(proto_tag, dc_idx, dec_key_and_iv=enc_key_and_iv)
-                else:
-                    tg_data = await do_direct_handshake(proto_tag, dc_idx)
-            else:
-                tg_data = await do_middleproxy_handshake(proto_tag, dc_idx, cl_ip, cl_port)
-            break
-        except (OSError, asyncio.TimeoutError) as e:
-            if attempt < config.CONNECTION_RETRY_ATTEMPTS - 1:
-                await asyncio.sleep(config.CONNECTION_RETRY_DELAY * (attempt + 1))
-                continue
-            else:
-                return  # Give up after all retries
+    if connect_directly:
+        if config.FAST_MODE:
+            tg_data = await do_direct_handshake(proto_tag, dc_idx, dec_key_and_iv=enc_key_and_iv)
+        else:
+            tg_data = await do_direct_handshake(proto_tag, dc_idx)
+    else:
+        tg_data = await do_middleproxy_handshake(proto_tag, dc_idx, cl_ip, cl_port)
 
     if not tg_data:
         return

@@ -33,35 +33,3 @@ MY_DOMAIN = os.environ.get('MY_IP', None)
 
 # Optional advertising tag (can be set via environment)
 AD_TAG = os.environ.get('AD_TAG', None)
-
-# Client side TCP keep-alive settings – tune to minimise idle drops
-# Time (in seconds) the connection should remain idle before TCP starts sending keep-alives.
-CLIENT_KEEPALIVE = int(os.environ.get('MTPROTO_CLIENT_KEEPALIVE', 15))
-
-# Maximum time (in seconds) that transmitted data may remain unacknowledged before the connection is aborted.
-CLIENT_ACK_TIMEOUT = int(os.environ.get('MTPROTO_CLIENT_ACK_TIMEOUT', 90))
-
-# Connection timeout for handshakes - more generous for slow VPS
-CLIENT_HANDSHAKE_TIMEOUT = int(os.environ.get('MTPROTO_CLIENT_HANDSHAKE_TIMEOUT', 30))
-
-# Telegram connection timeout - longer for stability
-TG_CONNECT_TIMEOUT = int(os.environ.get('MTPROTO_TG_CONNECT_TIMEOUT', 15))
-
-# Connection retry settings for stability
-CONNECTION_RETRY_ATTEMPTS = int(os.environ.get('MTPROTO_RETRY_ATTEMPTS', 3))
-CONNECTION_RETRY_DELAY = float(os.environ.get('MTPROTO_RETRY_DELAY', 1.0))
-
-# Buffer size for low-memory environments
-SOCKET_RECV_BUFFER = int(os.environ.get('MTPROTO_RECV_BUFFER', 32768))
-SOCKET_SEND_BUFFER = int(os.environ.get('MTPROTO_SEND_BUFFER', 32768))
-
-# --- Low-latency tuning overrides -------------------------------------------
-# Skip Telegram middle-proxy hop (direct DC connection)
-USE_MIDDLE_PROXY = False
-
-# Keep FAST_MODE enabled to avoid extra re-encryption delay
-FAST_MODE = True
-
-# Smaller socket buffers – data is flushed to the wire quicker
-TO_TG_BUFSIZE  = 8192          # bytes towards Telegram - reduced for stability
-TO_CLT_BUFSIZE = 8192          # bytes towards client - reduced for stability

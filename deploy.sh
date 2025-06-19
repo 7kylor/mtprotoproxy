@@ -4,35 +4,6 @@ echo "============================================================"
 echo " Deploying Stable MTProxy"
 echo "============================================================"
 
-echo "Applying kernel tuning for stable connections..."
-if [ "$(id -u)" = "0" ]; then
-  cp sysctl_mtproxy.conf /etc/sysctl.d/99-mtproxy.conf || true
-  sysctl --system > /dev/null 2>&1 || true
-  echo "Kernel tuning applied successfully"
-else
-  echo "(non-root) Please copy sysctl_mtproxy.conf to /etc/sysctl.d/ and run 'sudo sysctl --system' manually" >&2
-fi
-
-echo "Checking system resources..."
-MEMORY_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-MEMORY_MB=$((MEMORY_KB / 1024))
-echo "Available memory: ${MEMORY_MB}MB"
-
-if [ "$MEMORY_MB" -lt 1024 ]; then
-    echo "Warning: Low memory detected. Applying conservative settings..."
-    export MTPROTO_RECV_BUFFER=16384
-    export MTPROTO_SEND_BUFFER=16384
-    export MTPROTO_CLIENT_KEEPALIVE=20
-    export MTPROTO_CLIENT_ACK_TIMEOUT=120
-fi
-
-echo "Setting up Python environment..."
-# Install required packages if not present
-python3 -c "import uvloop" 2>/dev/null || {
-    echo "Installing uvloop for better performance..."
-    pip3 install uvloop --user || echo "Warning: Could not install uvloop"
-}
-
 # Function to generate secure random hex string
 generate_secret() {
     python3 -c "import secrets; print(secrets.token_hex(16))"
@@ -156,15 +127,4 @@ if [ -f .env ]; then
 fi
 
 echo "Logs: docker-compose logs -f mtproxy"
-echo "============================================================"
-
-echo "Deployment configuration complete."
-echo ""
-echo "To start the proxy:"
-echo "  python3 mtprotoproxy.py"
-echo ""
-echo "To run as systemd service:"
-echo "  sudo cp mtprotoproxy.service /etc/systemd/system/"
-echo "  sudo systemctl daemon-reload"
-echo "  sudo systemctl enable mtprotoproxy"
-echo "  sudo systemctl start mtprotoproxy" 
+echo "============================================================" 
