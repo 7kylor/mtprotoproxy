@@ -36,7 +36,7 @@ AD_TAG = os.environ.get('AD_TAG', None)
 
 # Client side TCP keep-alive settings – tune to minimise idle drops
 # Time (in seconds) the connection should remain idle before TCP starts sending keep-alives.
-CLIENT_KEEPALIVE = int(os.environ.get('MTPROTO_CLIENT_KEEPALIVE', 40))
+CLIENT_KEEPALIVE = int(os.environ.get('MTPROTO_CLIENT_KEEPALIVE', 15))
 
 # Maximum time (in seconds) that transmitted data may remain unacknowledged before the connection is aborted.
-CLIENT_ACK_TIMEOUT = int(os.environ.get('MTPROTO_CLIENT_ACK_TIMEOUT', 60))
+CLIENT_ACK_TIMEOUT = int(os.environ.get('MTPROTO_CLIENT_ACK_TIMEOUT', 30))
