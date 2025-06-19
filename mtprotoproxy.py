@@ -144,7 +144,7 @@ def init_config():
     conf_dict.setdefault("PREFER_IPV6", socket.has_ipv6)
 
     # disables tg->client trafic reencryption, faster but less secure
-    conf_dict.setdefault("FAST_MODE", True)
+    conf_dict.setdefault("FAST_MODE", False)
 
     # enables some working modes
     modes = conf_dict.get("MODES", {})
