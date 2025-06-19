@@ -5,14 +5,23 @@ import time
 import subprocess
 import re
 import sys
+import os
 
 def get_proxy_port():
     """Get proxy port from docker logs or environment"""
     try:
+        # First try to get from .env file
+        if os.path.exists('.env'):
+            with open('.env', 'r') as f:
+                for line in f:
+                    if line.startswith('MTPROTO_PORT='):
+                        return int(line.split('=')[1].strip())
+        
+        # Then try logs
         result = subprocess.run(['docker-compose', 'logs'], capture_output=True, text=True)
         if result.returncode == 0:
             # Look for port in logs
-            match = re.search(r'port (\d+)', result.stdout, re.IGNORECASE)
+            match = re.search(r'port[:\s=]*(\d+)', result.stdout, re.IGNORECASE)
             if match:
                 return int(match.group(1))
     except:
