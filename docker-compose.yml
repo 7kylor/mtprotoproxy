@@ -8,13 +8,9 @@ services:
     ports:
       - "${MTPROTO_PORT:-8080}:${MTPROTO_PORT:-8080}"
     
-    # Environment variables for dynamic configuration
-    environment:
-      - MTPROTO_PORT=${MTPROTO_PORT:-8080}
-      - TLS_DOMAIN=${TLS_DOMAIN:-www.cloudflare.com}
-      - USER1_SECRET=${USER1_SECRET}
-      - USER2_SECRET=${USER2_SECRET}
-      - AD_TAG=${AD_TAG}
+    # Load configuration directly from the .env file
+    env_file:
+      - .env
     
     # Security hardening
     security_opt:
@@ -39,7 +35,7 @@ services:
     
     # Health check
     healthcheck:
-      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('127.0.0.1', ${MTPROTO_PORT:-8080})); s.close()"]
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('127.0.0.1', 8080)); s.close()"]
       interval: 30s
       timeout: 5s
       retries: 3
