@@ -35,7 +35,7 @@ services:
     
     # Health check
     healthcheck:
-      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('127.0.0.1', 8080)); s.close()"]
+      test: ["CMD", "python3", "-c", "import socket; import os; s=socket.socket(); s.settimeout(1); s.connect(('127.0.0.1', int(os.environ.get('MTPROTO_PORT', 8080)))); s.close()"]
       interval: 30s
       timeout: 5s
       retries: 3
