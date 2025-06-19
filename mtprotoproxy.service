@@ -4,8 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/Projects/mtprotoproxy
-ExecStart=/usr/bin/python3 mtprotoproxy.py
+# Adjust this path if you cloned the repo elsewhere
+WorkingDirectory=/opt/mtprotoproxy
+# Use env so it works whether python3 is /usr/bin/python3 or elsewhere
+ExecStart=/usr/bin/env python3 mtprotoproxy.py
 Restart=always
 RestartSec=2
 
