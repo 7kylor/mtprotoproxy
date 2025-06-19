@@ -9,6 +9,7 @@ A high-performance, secure MTProto proxy implementation based on [alexbers/mtpro
 - **Scalability**: Supports 4,000+ concurrent users
 - **Anti-Censorship**: Advanced obfuscation techniques to bypass restrictions
 - **Dynamic Configuration**: Auto-generated secrets, no hardcoded values
+- **Singapore DC**: Optimized for Singapore Data Center 5 (91.108.56.130) by default
 - **Lightweight**: Optimized Docker container with security hardening
 - **Production Ready**: Battle-tested codebase with comprehensive health checks
 
@@ -40,6 +41,7 @@ The proxy automatically generates secure configuration:
 - `USER1_SECRET`: First user secret (auto-generated if not set)
 - `USER2_SECRET`: Second user secret (auto-generated if not set)
 - `AD_TAG`: Optional advertising tag
+- `FORCE_SINGAPORE_DC`: Force connections to Singapore Data Center 5 (default: true)
 
 ## Connection Formats
 
@@ -107,12 +109,33 @@ python3 test.py
 - Network isolation
 - Health monitoring
 
+## Singapore Data Center Configuration
+
+This proxy is specifically optimized for **Singapore Data Center 5** (`91.108.56.130`) to provide optimal performance for Asia-Pacific users.
+
+### Configuration Details
+
+- **Primary DC**: Singapore DC5 (91.108.56.130)
+- **IPv6 Support**: 2001:b28:f23f:f005::a
+- **Auto-forced**: Enabled by default (`FORCE_SINGAPORE_DC=true`)
+- **Fallback**: Will use other DCs if Singapore is unavailable
+
+### To disable Singapore forcing
+
+Set `FORCE_SINGAPORE_DC=false` in your environment before deployment:
+
+```bash
+export FORCE_SINGAPORE_DC=false
+./deploy.sh
+```
+
 ## Troubleshooting
 
 1. **Port conflicts**: The deployment script automatically finds available ports
 2. **Connection issues**: Check firewall settings and ensure port is accessible
-3. **Performance**: Monitor with `docker stats` and logs
-4. **Updates**: Redeploy with `./deploy.sh` for latest configuration
+3. **Singapore DC issues**: Monitor logs for "Forcing connection to Singapore DC" messages
+4. **Performance**: Monitor with `docker stats` and logs
+5. **Updates**: Redeploy with `./deploy.sh` for latest configuration
 
 ## Requirements
 

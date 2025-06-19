@@ -24,24 +24,40 @@ def test_direct_telegram():
     print("Testing direct Telegram datacenter connections...")
     
     telegram_dcs = [
-        ('149.154.175.50', 443),  # DC1
-        ('149.154.167.51', 443),  # DC2  
-        ('149.154.175.100', 443), # DC3
-        ('149.154.167.91', 443),  # DC4
-        ('91.108.56.130', 443),   # DC5
+        ('149.154.175.50', 443),  # DC1 - Miami
+        ('149.154.167.51', 443),  # DC2 - Amsterdam  
+        ('149.154.175.100', 443), # DC3 - Miami
+        ('149.154.167.91', 443),  # DC4 - Amsterdam
+        ('91.108.56.130', 443),   # DC5 - Singapore (Primary)
     ]
     
+    dc_names = ["Miami", "Amsterdam", "Miami", "Amsterdam", "Singapore"]
+    
     working_dcs = 0
+    singapore_working = False
+    
     for i, (host, port) in enumerate(telegram_dcs, 1):
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
             sock.connect((host, port))
             sock.close()
-            print(f"  ✓ DC{i} ({host}:{port}) - Connected")
+            status = "✓ Connected"
+            if i == 5:  # Singapore DC
+                status += " (PRIMARY TARGET)"
+                singapore_working = True
+            print(f"  ✓ DC{i} {dc_names[i-1]} ({host}:{port}) - {status}")
             working_dcs += 1
         except Exception as e:
-            print(f"  ✗ DC{i} ({host}:{port}) - Failed: {e}")
+            status = f"✗ Failed: {e}"
+            if i == 5:  # Singapore DC
+                status += " (PRIMARY TARGET FAILED!)"
+            print(f"  ✗ DC{i} {dc_names[i-1]} ({host}:{port}) - {status}")
+    
+    if singapore_working:
+        print(f"✓ Singapore DC5 is working - Primary target accessible")
+    else:
+        print(f"⚠ Singapore DC5 failed - Primary target not accessible")
     
     if working_dcs >= 3:
         print(f"✓ Telegram connectivity test passed ({working_dcs}/5 DCs working)")

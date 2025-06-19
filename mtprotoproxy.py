@@ -23,6 +23,10 @@ import traceback
 
 TG_DATACENTER_PORT = 443
 
+# Singapore DC5 IPs (prioritized when FORCE_SINGAPORE_DC is enabled)
+TG_SINGAPORE_DC_V4 = "91.108.56.130"
+TG_SINGAPORE_DC_V6 = "2001:b28:f23f:f005::a"
+
 TG_DATACENTERS_V4 = [
     "149.154.175.50", "149.154.167.51", "149.154.175.100",
     "149.154.167.91", "149.154.171.5"
@@ -47,7 +51,7 @@ TG_MIDDLE_PROXIES_V6 = {
     2: [("2001:67c:04e8:f002::d", 80)], -2: [("2001:67c:04e8:f002::d", 80)],
     3: [("2001:b28:f23d:f003::d", 8888)], -3: [("2001:b28:f23d:f003::d", 8888)],
     4: [("2001:67c:04e8:f004::d", 8888)], -4: [("2001:67c:04e8:f004::d", 8888)],
-    5: [("2001:b28:f23f:f005::d", 8888)], -5: [("2001:67c:04e8:f004::d", 8888)]
+    5: [("2001:b28:f23f:f005::d", 8888)], -5: [("2001:b28:f23f:f005::d", 8888)]
 }
 
 PROXY_SECRET = bytes.fromhex(
@@ -1344,14 +1348,22 @@ async def do_direct_handshake(proto_tag, dc_idx, dec_key_and_iv=None):
 
     dc_idx = abs(dc_idx) - 1
 
-    if my_ip_info["ipv6"] and (config.PREFER_IPV6 or not my_ip_info["ipv4"]):
-        if not 0 <= dc_idx < len(TG_DATACENTERS_V6):
-            return False
-        dc = TG_DATACENTERS_V6[dc_idx]
+    # Force Singapore DC5 if configured
+    if config.get("FORCE_SINGAPORE_DC", False):
+        if my_ip_info["ipv6"] and (config.PREFER_IPV6 or not my_ip_info["ipv4"]):
+            dc = TG_SINGAPORE_DC_V6
+        else:
+            dc = TG_SINGAPORE_DC_V4
+        print_err("Forcing connection to Singapore DC:", dc)
     else:
-        if not 0 <= dc_idx < len(TG_DATACENTERS_V4):
-            return False
-        dc = TG_DATACENTERS_V4[dc_idx]
+        if my_ip_info["ipv6"] and (config.PREFER_IPV6 or not my_ip_info["ipv4"]):
+            if not 0 <= dc_idx < len(TG_DATACENTERS_V6):
+                return False
+            dc = TG_DATACENTERS_V6[dc_idx]
+        else:
+            if not 0 <= dc_idx < len(TG_DATACENTERS_V4):
+                return False
+            dc = TG_DATACENTERS_V4[dc_idx]
 
     try:
         reader_tgt, writer_tgt = await tg_connection_pool.get_connection(dc, TG_DATACENTER_PORT)
@@ -1537,14 +1549,22 @@ async def do_middleproxy_handshake(proto_tag, dc_idx, cl_ip, cl_port):
 
     use_ipv6_tg = (my_ip_info["ipv6"] and (config.PREFER_IPV6 or not my_ip_info["ipv4"]))
 
-    if use_ipv6_tg:
-        if dc_idx not in TG_MIDDLE_PROXIES_V6:
-            return False
-        addr, port = myrandom.choice(TG_MIDDLE_PROXIES_V6[dc_idx])
+    # Force Singapore DC5 if configured
+    if config.get("FORCE_SINGAPORE_DC", False):
+        if use_ipv6_tg:
+            addr, port = myrandom.choice(TG_MIDDLE_PROXIES_V6[5])
+        else:
+            addr, port = myrandom.choice(TG_MIDDLE_PROXIES_V4[5])
+        print_err("Forcing middleproxy connection to Singapore DC:", addr, port)
     else:
-        if dc_idx not in TG_MIDDLE_PROXIES_V4:
-            return False
-        addr, port = myrandom.choice(TG_MIDDLE_PROXIES_V4[dc_idx])
+        if use_ipv6_tg:
+            if dc_idx not in TG_MIDDLE_PROXIES_V6:
+                return False
+            addr, port = myrandom.choice(TG_MIDDLE_PROXIES_V6[dc_idx])
+        else:
+            if dc_idx not in TG_MIDDLE_PROXIES_V4:
+                return False
+            addr, port = myrandom.choice(TG_MIDDLE_PROXIES_V4[dc_idx])
 
     try:
         ret = await tg_connection_pool.get_connection(addr, port, middleproxy_handshake)

@@ -31,5 +31,8 @@ TLS_DOMAIN = os.environ.get('TLS_DOMAIN', "www.cloudflare.com")
 # Override IP detection for Docker environments
 MY_DOMAIN = os.environ.get('MY_IP', None)
 
+# Force connection to Singapore Data Center (DC5)
+FORCE_SINGAPORE_DC = os.environ.get('FORCE_SINGAPORE_DC', 'true').lower() == 'true'
+
 # Optional advertising tag (can be set via environment)
 AD_TAG = os.environ.get('AD_TAG', None)
