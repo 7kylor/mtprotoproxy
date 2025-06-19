@@ -40,3 +40,14 @@ CLIENT_KEEPALIVE = int(os.environ.get('MTPROTO_CLIENT_KEEPALIVE', 15))
 
 # Maximum time (in seconds) that transmitted data may remain unacknowledged before the connection is aborted.
 CLIENT_ACK_TIMEOUT = int(os.environ.get('MTPROTO_CLIENT_ACK_TIMEOUT', 30))
+
+# --- Low-latency tuning overrides -------------------------------------------
+# Skip Telegram middle-proxy hop (direct DC connection)
+USE_MIDDLE_PROXY = False
+
+# Keep FAST_MODE enabled to avoid extra re-encryption delay
+FAST_MODE = True
+
+# Smaller socket buffers – data is flushed to the wire quicker
+TO_TG_BUFSIZE  = 16384          # bytes towards Telegram
+TO_CLT_BUFSIZE = 16384          # bytes towards client

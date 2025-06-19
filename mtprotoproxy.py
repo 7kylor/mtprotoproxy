@@ -23,15 +23,9 @@ import traceback
 
 TG_DATACENTER_PORT = 443
 
-TG_DATACENTERS_V4 = [
-    "149.154.175.50", "149.154.167.51", "149.154.175.100",
-    "149.154.167.91", "149.154.171.5"
-]
+TG_DATACENTERS_V4 = ["149.154.171.5"] * 5
 
-TG_DATACENTERS_V6 = [
-    "2001:b28:f23d:f001::a", "2001:67c:04e8:f002::a", "2001:b28:f23d:f003::a",
-    "2001:67c:04e8:f004::a", "2001:b28:f23f:f005::a"
-]
+TG_DATACENTERS_V6 = ["2001:b28:f23f:f005::a"] * 5
 
 # This list will be updated in the runtime
 TG_MIDDLE_PROXIES_V4 = {
@@ -969,6 +963,7 @@ def try_setsockopt(sock, level, option, value):
 
 def set_keepalive(sock, interval=40, attempts=5):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    set_nodelay(sock)
     if hasattr(socket, "TCP_KEEPALIVE"):
         # macOS/FreeBSD style constant for keep-alive interval
         try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPALIVE, interval)
@@ -978,6 +973,12 @@ def set_keepalive(sock, interval=40, attempts=5):
         try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPCNT, attempts)
     if hasattr(socket, "TCP_KEEPIDLE"):
         try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, interval)
+
+
+def set_nodelay(sock):
+    """Disable Nagle's algorithm (TCP_NODELAY) for lower latency."""
+    if hasattr(socket, "TCP_NODELAY"):
+        try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
 
 def set_ack_timeout(sock, timeout):
