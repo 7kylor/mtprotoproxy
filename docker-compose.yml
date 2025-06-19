@@ -1,0 +1,54 @@
+version: '3.8'
+services:
+  mtproxy:
+    build: .
+    container_name: mtproxy_stable
+    restart: unless-stopped
+    
+    # Dynamic port mapping instead of host networking
+    ports:
+      - "${MTPROTO_PORT:-8080}:${MTPROTO_PORT:-8080}"
+    
+    # Environment variables for dynamic configuration
+    environment:
+      - MTPROTO_PORT=${MTPROTO_PORT:-8080}
+      - TLS_DOMAIN=${TLS_DOMAIN:-www.cloudflare.com}
+      - USER1_SECRET=${USER1_SECRET}
+      - USER2_SECRET=${USER2_SECRET}
+      - AD_TAG=${AD_TAG}
+    
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+    
+    # Resource limits for stability
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.settimeout(1); s.connect(('127.0.0.1', ${MTPROTO_PORT:-8080})); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    
+    # Optimized logging
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
