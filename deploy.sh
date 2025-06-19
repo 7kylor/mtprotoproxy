@@ -4,6 +4,14 @@ echo "============================================================"
 echo " Deploying Stable MTProxy"
 echo "============================================================"
 
+echo "Applying kernel tuning for stable connections..."
+if [ "$(id -u)" = "0" ]; then
+  cp sysctl_mtproxy.conf /etc/sysctl.d/99-mtproxy.conf || true
+  sysctl --system > /dev/null 2>&1 || true
+else
+  echo "(non-root) Please copy sysctl_mtproxy.conf to /etc/sysctl.d/ and run 'sudo sysctl --system' manually" >&2
+fi
+
 # Function to generate secure random hex string
 generate_secret() {
     python3 -c "import secrets; print(secrets.token_hex(16))"

@@ -1,0 +1,20 @@
+[Unit]
+Description=High-performance Telegram MTProto proxy
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Projects/mtprotoproxy
+ExecStart=/usr/bin/python3 mtprotoproxy.py
+Restart=always
+RestartSec=2
+
+# Resource limits
+LimitNOFILE=131072
+CPUQuota=80%
+Nice=-5
+IOSchedulingClass=best-effort
+IOSchedulingPriority=4
+
+[Install]
+WantedBy=multi-user.target 
