@@ -77,6 +77,7 @@ echo "============================================================"
     echo "USER1_SECRET=${USER1_SECRET}"
     echo "USER2_SECRET=${USER2_SECRET}"
     echo "AD_TAG=${AD_TAG}"
+    echo "MY_IP=${EXTERNAL_IP}"
 } > .env
 echo ".env file created successfully."
 echo "============================================================"
