@@ -68,6 +68,19 @@ echo "User1 Secret: $USER1_SECRET"
 echo "User2 Secret: $USER2_SECRET"
 echo "============================================================"
 
+echo "============================================================"
+echo " Generating .env file for consistent configuration"
+echo "============================================================"
+{
+    echo "MTPROTO_PORT=${MTPROTO_PORT}"
+    echo "TLS_DOMAIN=${TLS_DOMAIN}"
+    echo "USER1_SECRET=${USER1_SECRET}"
+    echo "USER2_SECRET=${USER2_SECRET}"
+    echo "AD_TAG=${AD_TAG}"
+} > .env
+echo ".env file created successfully."
+echo "============================================================"
+
 # Stop any existing containers
 echo "Stopping existing containers..."
 docker-compose down 2>/dev/null || true
@@ -95,5 +108,11 @@ echo "   Port: $MTPROTO_PORT"
 echo "   Secret 1: $USER1_SECRET"
 echo "   Secret 2: $USER2_SECRET"
 echo
-echo "Logs: docker-compose logs -f"
+
+# Load .env to show correct info
+if [ -f .env ]; then
+  export $(cat .env | sed 's/#.*//g' | xargs)
+fi
+
+echo "Logs: docker-compose logs -f mtproxy"
 echo "============================================================" 
