@@ -969,12 +969,15 @@ def try_setsockopt(sock, level, option, value):
 
 def set_keepalive(sock, interval=40, attempts=5):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-    if hasattr(socket, "TCP_KEEPIDLE"):
-        try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, interval)
+    if hasattr(socket, "TCP_KEEPALIVE"):
+        # macOS/FreeBSD style constant for keep-alive interval
+        try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPALIVE, interval)
     if hasattr(socket, "TCP_KEEPINTVL"):
         try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
     if hasattr(socket, "TCP_KEEPCNT"):
         try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPCNT, attempts)
+    if hasattr(socket, "TCP_KEEPIDLE"):
+        try_setsockopt(sock, socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, interval)
 
 
 def set_ack_timeout(sock, timeout):
